@@ -1,0 +1,3766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Aplicación de seguimiento de dieta, pasos, ayuno y estadísticas semanales">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Dieta Tracker">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Iconos para iOS -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <title>Mi Dieta Tracker v4.3 PWA</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --primary-light: #60a5fa;
+            --success: #10b981;
+            --success-dark: #059669;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --warning: #f59e0b;
+            --warning-dark: #d97706;
+            --purple: #8b5cf6;
+            --purple-dark: #7c3aed;
+            --pink: #ec4899;
+            --pink-dark: #db2777;
+            --cyan: #06b6d4;
+            --cyan-dark: #0891b2;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            padding: 30px 0;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: white;
+            text-align: center;
+            flex: 1;
+        }
+
+        .header-help-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .header-help-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        /* NUEVO: Indicador de ayuno automático */
+        .ayuno-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+
+        .ayuno-excelente {
+            background: #10b981;
+            color: white;
+        }
+
+        .ayuno-bueno {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .ayuno-insuficiente {
+            background: #ef4444;
+            color: white;
+        }
+
+        .ayuno-auto {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: var(--bg-card);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .tab:hover:not(.active) {
+            background: var(--bg-main);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-container {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        /* NUEVO: Etiqueta con info adicional */
+        .label-with-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-icon {
+            cursor: help;
+            background: var(--primary-light);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        input, textarea, select {
+            padding: 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* NUEVO: Input deshabilitado con estilo especial */
+        input:disabled {
+            background: #f1f5f9;
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        textarea {
+            resize: none;
+            height: 60px;
+            font-family: inherit;
+        }
+
+        .comidas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .comida-card {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+        }
+
+        .comida-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* NUEVO: Plantillas rápidas */
+        .quick-templates {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+
+        .template-btn {
+            background: var(--primary-light);
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+
+        .template-btn:hover {
+            background: var(--primary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: var(--text-primary);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: var(--success-dark);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-dark);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: var(--warning-dark);
+        }
+
+        /* NUEVO: Filtros de fecha en historial */
+        .filters-container {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .historial-table {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--bg-main);
+        }
+
+        .acciones {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-icon {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            background: var(--primary-light);
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-icon.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* NUEVO v4: Filtros de mes en estadísticas */
+        .stats-filters {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .stats-filters select {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .help-btn {
+            background: var(--warning);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .help-btn:hover {
+            background: var(--warning-dark);
+            transform: translateY(-2px);
+        }
+
+        /* Modal de ayuda */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .modal-header h2 {
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .close {
+            color: var(--text-secondary);
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: var(--danger);
+        }
+
+        .help-section {
+            margin-bottom: 25px;
+        }
+
+        .help-section h3 {
+            color: var(--primary);
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .help-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .help-section li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .help-section li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .help-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge-mes {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        .badge-total {
+            background: var(--success);
+            color: white;
+        }
+
+        /* NUEVO v4.2: Estilos para vista semanal */
+        .weekly-view {
+            /* Sin estilos de tarjeta para ocupar todo el ancho como otras pestañas */
+        }
+
+        .weekly-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 25px 30px 20px;
+            border-bottom: 2px solid var(--border);
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .weekly-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .week-navigation {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* NUEVO v4.2: Sección del gráfico con background */
+        .weekly-chart-section {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .week-nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .week-nav-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.1);
+        }
+
+        .week-nav-btn:disabled {
+            background: var(--text-secondary);
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        .week-range {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+            min-width: 220px;
+            text-align: center;
+        }
+
+        .weekly-total {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, var(--bg-main), white);
+            border-radius: 12px;
+        }
+
+        .weekly-total-value {
+            font-size: 56px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+
+        .weekly-average {
+            font-size: 18px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .weekly-chart-container {
+            margin: 40px 0;
+            height: 350px;
+        }
+
+        .metric-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .metric-btn {
+            padding: 18px;
+            border: 2px solid var(--border);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .metric-btn.active {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+            box-shadow: var(--shadow);
+        }
+
+        /* NUEVO v4.2: Estadísticas semanales resumidas */
+        .weekly-stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .weekly-stat-card {
+            background: linear-gradient(135deg, #f8fafc, #fff);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .weekly-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .weekly-stat-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .weekly-stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .weekly-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .weekly-stat-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* NUEVO v4.2: Badge de semana */
+        .week-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: linear-gradient(135deg, var(--success), var(--success-dark));
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 15px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .week-badge.past {
+            background: linear-gradient(135deg, var(--text-secondary), var(--text-primary));
+            box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+        }
+
+        /* NUEVO v4.2: Logros semanales */
+        .weekly-achievements {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        /* NUEVO v4.2: Récords mensuales */
+        .monthly-achievements {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .achievements-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .achievement-card {
+            background: linear-gradient(135deg, #fef3c7, #fef9e3);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #fbbf24;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .achievement-card::before {
+            content: '🏆';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 60px;
+            opacity: 0.15;
+        }
+
+        /* NUEVO v4.2: Estilos para récords mensuales */
+        .achievement-card.monthly {
+            background: linear-gradient(135deg, #dbeafe, #eff6ff);
+            border: 2px solid #3b82f6;
+        }
+
+        .achievement-card.monthly::before {
+            content: '📅';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 60px;
+            opacity: 0.15;
+        }
+
+        .achievement-card.monthly .achievement-value {
+            color: #1e40af;
+        }
+
+        .achievement-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .achievement-label {
+            font-size: 13px;
+            color: #78716c;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .achievement-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #92400e;
+        }
+
+        .achievement-date {
+            font-size: 12px;
+            color: #78716c;
+            margin-top: 8px;
+        }
+
+        /* NUEVO v4.3: Sistema de comidas con dropdowns y chips */
+        .meals-section-title {
+            margin: 30px 0 20px;
+            color: var(--text-secondary);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .meals-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .meals-grid-bottom {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .meal-selector {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .meal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .meal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meal-time-input {
+            width: 90px;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .meal-dropdown {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+
+        .meal-dropdown:hover {
+            border-color: var(--primary);
+        }
+
+        .meal-dropdown:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .meal-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 40px;
+        }
+
+        .meal-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            animation: chipIn 0.3s ease-out;
+        }
+
+        @keyframes chipIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .meal-chip.special {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .meal-chip.none {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        .chip-remove {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .chip-remove:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            /* NUEVO v4.3: Responsive para sistema de comidas */
+            .meals-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .meals-grid-bottom {
+                grid-template-columns: 1fr;
+            }
+
+            .meal-selector {
+                padding: 15px;
+            }
+
+            .meal-title {
+                font-size: 16px;
+            }
+
+            .weekly-header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+            }
+
+            .weekly-chart-section {
+                padding: 20px;
+            }
+
+            .weekly-stats-summary {
+                padding: 20px;
+            }
+
+            .weekly-achievements {
+                padding: 20px;
+            }
+
+            .monthly-achievements {
+                padding: 20px;
+            }
+
+            .weekly-title {
+                font-size: 24px;
+            }
+
+            .weekly-total-value {
+                font-size: 40px;
+            }
+
+            .weekly-chart-container {
+                height: 280px;
+            }
+
+            .metric-buttons {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .metric-btn {
+                padding: 15px;
+                font-size: 14px;
+            }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 25px;
+            padding-left: 75px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .stat-card.cyan {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            color: white;
+            border: none;
+        }
+
+        .stat-card.cyan .stat-label,
+        .stat-card.cyan .stat-value,
+        .stat-card.cyan .stat-trend {
+            color: white;
+        }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+        }
+
+        .stat-card.success .stat-label,
+        .stat-card.success .stat-value,
+        .stat-card.success .stat-trend {
+            color: white;
+        }
+
+        .stat-card.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+        }
+
+        .stat-card.danger .stat-label,
+        .stat-card.danger .stat-value,
+        .stat-card.danger .stat-trend {
+            color: white;
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+        }
+
+        .stat-card.warning .stat-label,
+        .stat-card.warning .stat-value,
+        .stat-card.warning .stat-trend {
+            color: white;
+        }
+
+        .stat-card.purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+        }
+
+        .stat-card.purple .stat-label,
+        .stat-card.purple .stat-value,
+        .stat-card.purple .stat-trend {
+            color: white;
+        }
+
+        .stat-card.pink {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            color: white;
+            border: none;
+        }
+
+        .stat-card.pink .stat-label,
+        .stat-card.pink .stat-value,
+        .stat-card.pink .stat-trend {
+            color: white;
+        }
+
+        .stat-icon {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            font-size: 36px;
+            opacity: 0.95;
+        }
+
+        .stat-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-value small {
+            font-size: 18px;
+        }
+
+        .stat-trend {
+            font-size: 13px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+
+        .config-section {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .config-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .config-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .alerta {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .alerta.success {
+            background: var(--success);
+            color: white;
+        }
+
+        .alerta.warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .alerta.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-content > div:first-child {
+                display: none;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .header-help-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comidas-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div style="width: 200px;"></div>
+                <h1>📊 Mi Dieta Tracker <span class="version-badge">v4.3</span></h1>
+                <button class="header-help-btn" onclick="mostrarAyuda()">
+                    <span>❓</span>
+                    <span>Ayuda</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="alertaContainer"></div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="cambiarTab('registro')">📝 Registro</button>
+            <button class="tab" onclick="cambiarTab('historial')">📅 Historial</button>
+            <button class="tab" onclick="cambiarTab('semanal')">📊 Semanal</button>
+            <button class="tab" onclick="cambiarTab('estadisticas')">📈 Estadísticas</button>
+            <button class="tab" onclick="cambiarTab('configuracion')">⚙️ Configuración</button>
+        </div>
+
+        <!-- TAB: REGISTRO -->
+        <div id="tabRegistro" class="tab-content active">
+            <div class="form-container">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">📝 Nuevo Registro</h2>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="fecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Peso (kg)</label>
+                        <input type="number" id="peso" step="0.1" placeholder="Ej: 75.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Pasos</label>
+                        <input type="number" id="pasos" placeholder="Ej: 10000">
+                    </div>
+                    <div class="form-group">
+                        <div class="label-with-info">
+                            <label>Ayuno (horas)</label>
+                            <span class="info-icon" title="Se calcula automáticamente según las horas de comidas">ℹ️</span>
+                        </div>
+                        <input type="number" id="ayuno" step="0.1" placeholder="Auto-calculado" disabled>
+                    </div>
+                </div>
+
+                <h3 class="meals-section-title">🍽️ Comidas del Día</h3>
+                
+                <!-- Primera fila: Desayuno, Almuerzo, Comida -->
+                <div class="meals-grid">
+                    <!-- Desayuno -->
+                    <div class="meal-selector">
+                        <div class="meal-header">
+                            <div class="meal-title">🌅 Desayuno</div>
+                            <input type="time" class="meal-time-input" id="desayunoHora">
+                        </div>
+                        <select class="meal-dropdown" onchange="addMealChip('desayuno', this)">
+                            <option value="">Seleccionar...</option>
+                            <option value="Café con leche">☕ Café con leche</option>
+                            <option value="Tostadas con jamón">🥖 Tostadas con jamón</option>
+                            <option value="Tostadas con aceite">🍞 Tostadas con aceite</option>
+                            <option value="1 Yogurt">🥛 1 Yogurt</option>
+                            <option value="Me he pasado" data-special="true">⚠️ Me he pasado</option>
+                            <option value="Nada" data-none="true">❌ Nada</option>
+                        </select>
+                        <div class="meal-chips" id="desayunoChips"></div>
+                    </div>
+
+                    <!-- Almuerzo -->
+                    <div class="meal-selector">
+                        <div class="meal-header">
+                            <div class="meal-title">🍎 Almuerzo</div>
+                            <input type="time" class="meal-time-input" id="almuerzoHora">
+                        </div>
+                        <select class="meal-dropdown" onchange="addMealChip('almuerzo', this)">
+                            <option value="">Seleccionar...</option>
+                            <option value="Café con leche">☕ Café con leche</option>
+                            <option value="Tostadas con jamón">🥖 Tostadas con jamón</option>
+                            <option value="Tostadas con aceite">🍞 Tostadas con aceite</option>
+                            <option value="1 Yogurt">🥛 1 Yogurt</option>
+                            <option value="1 Pieza de fruta">🍎 1 Pieza de fruta</option>
+                            <option value="Me he pasado" data-special="true">⚠️ Me he pasado</option>
+                            <option value="Nada" data-none="true">❌ Nada</option>
+                        </select>
+                        <div class="meal-chips" id="almuerzoChips"></div>
+                    </div>
+
+                    <!-- Comida -->
+                    <div class="meal-selector">
+                        <div class="meal-header">
+                            <div class="meal-title">🍽️ Comida</div>
+                            <input type="time" class="meal-time-input" id="comidaHora">
+                        </div>
+                        <select class="meal-dropdown" onchange="addMealChip('comida', this)">
+                            <option value="">Seleccionar...</option>
+                            <option value="Ensalada">🥗 Ensalada</option>
+                            <option value="Pollo con ensalada">🍗 Pollo con ensalada</option>
+                            <option value="Ternera con ensalada">🥩 Ternera con ensalada</option>
+                            <option value="Pescado con ensalada">🐟 Pescado con ensalada</option>
+                            <option value="Pollo con verduras">🍗 Pollo con verduras</option>
+                            <option value="Ternera con verduras">🥩 Ternera con verduras</option>
+                            <option value="Pescado con verduras">🐟 Pescado con verduras</option>
+                            <option value="Legumbres">🫘 Legumbres</option>
+                            <option value="Guisado carne">🍲 Guisado carne</option>
+                            <option value="Caldereta">🍲 Caldereta</option>
+                            <option value="Pasta">🍝 Pasta</option>
+                            <option value="Arroz">🍚 Arroz</option>
+                            <option value="Lasaña">🍝 Lasaña</option>
+                            <option value="Albóndigas ternera">🍖 Albóndigas ternera</option>
+                            <option value="Me he pasado" data-special="true">⚠️ Me he pasado</option>
+                            <option value="Nada" data-none="true">❌ Nada</option>
+                        </select>
+                        <div class="meal-chips" id="comidaChips"></div>
+                    </div>
+                </div>
+
+                <!-- Segunda fila: Merienda y Cena -->
+                <div class="meals-grid-bottom">
+                    <!-- Merienda -->
+                    <div class="meal-selector">
+                        <div class="meal-header">
+                            <div class="meal-title">🍪 Merienda</div>
+                            <input type="time" class="meal-time-input" id="meriendaHora">
+                        </div>
+                        <select class="meal-dropdown" onchange="addMealChip('merienda', this)">
+                            <option value="">Seleccionar...</option>
+                            <option value="Café con leche">☕ Café con leche</option>
+                            <option value="1 Yogurt">🥛 1 Yogurt</option>
+                            <option value="1 Pieza de fruta">🍎 1 Pieza de fruta</option>
+                            <option value="Me he pasado" data-special="true">⚠️ Me he pasado</option>
+                            <option value="Nada" data-none="true">❌ Nada</option>
+                        </select>
+                        <div class="meal-chips" id="meriendaChips"></div>
+                    </div>
+
+                    <!-- Cena -->
+                    <div class="meal-selector">
+                        <div class="meal-header">
+                            <div class="meal-title">🌙 Cena</div>
+                            <input type="time" class="meal-time-input" id="cenaHora">
+                        </div>
+                        <select class="meal-dropdown" onchange="addMealChip('cena', this)">
+                            <option value="">Seleccionar...</option>
+                            <option value="Pollo con ensalada">🍗 Pollo con ensalada</option>
+                            <option value="Ternera con ensalada">🥩 Ternera con ensalada</option>
+                            <option value="Pescado con ensalada">🐟 Pescado con ensalada</option>
+                            <option value="Pollo con verduras">🍗 Pollo con verduras</option>
+                            <option value="Ternera con verduras">🥩 Ternera con verduras</option>
+                            <option value="Pescado con verduras">🐟 Pescado con verduras</option>
+                            <option value="Albóndigas ternera">🍖 Albóndigas ternera</option>
+                            <option value="Tortilla con ensalada">🍳 Tortilla con ensalada</option>
+                            <option value="Tortilla con verduras">🍳 Tortilla con verduras</option>
+                            <option value="Chuletas cordero con ensalada">🥩 Chuletas cordero con ensalada</option>
+                            <option value="Chuletas cordero con verduras">🥩 Chuletas cordero con verduras</option>
+                            <option value="Salmón con verduras">🐟 Salmón con verduras</option>
+                            <option value="Salmón con ensalada">🐟 Salmón con ensalada</option>
+                            <option value="Merluza con ensalada">🐟 Merluza con ensalada</option>
+                            <option value="Merluza con verduras">🐟 Merluza con verduras</option>
+                            <option value="Pavo con verduras">🦃 Pavo con verduras</option>
+                            <option value="Pavo con ensalada">🦃 Pavo con ensalada</option>
+                            <option value="Hamburguesa de pollo con ensalada">🍔 Hamburguesa de pollo con ensalada</option>
+                            <option value="Hamburguesa de pollo con verduras">🍔 Hamburguesa de pollo con verduras</option>
+                            <option value="Hamburguesa de ternera con ensalada">🍔 Hamburguesa de ternera con ensalada</option>
+                            <option value="Hamburguesa de ternera con verduras">🍔 Hamburguesa de ternera con verduras</option>
+                            <option value="Me he pasado" data-special="true">⚠️ Me he pasado</option>
+                            <option value="Nada" data-none="true">❌ Nada</option>
+                        </select>
+                        <div class="meal-chips" id="cenaChips"></div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>Observaciones</label>
+                    <textarea id="observaciones" placeholder="Notas adicionales del día..." style="height: 80px;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="guardarRegistro()">💾 Guardar Registro</button>
+                    <button class="btn btn-secondary" onclick="limpiarFormulario()">🔄 Limpiar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: HISTORIAL -->
+        <div id="tabHistorial" class="tab-content">
+            <!-- NUEVO: Filtros de fecha -->
+            <div class="filters-container">
+                <h3 style="margin-bottom: 15px;">🔍 Filtrar Registros</h3>
+                <div class="filters-grid">
+                    <div class="form-group">
+                        <label>Desde</label>
+                        <input type="date" id="filtroDesde">
+                    </div>
+                    <div class="form-group">
+                        <label>Hasta</label>
+                        <input type="date" id="filtroHasta">
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-primary" onclick="aplicarFiltros()">Filtrar</button>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-secondary" onclick="limpiarFiltros()">Limpiar Filtros</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="historial-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Peso</th>
+                            <th>Pasos</th>
+                            <th>Ayuno</th>
+                            <th>Comidas</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historialBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: SEMANAL (NUEVO v4.2) -->
+        <div id="tabSemanal" class="tab-content">
+            <div class="weekly-view">
+                <div class="weekly-header">
+                    <h2 class="weekly-title">
+                        📊 Vista Semanal
+                        <span class="week-badge" id="weekBadge">Semana actual</span>
+                    </h2>
+                    <div class="week-navigation">
+                        <button class="week-nav-btn" onclick="cambiarSemana(-1)" id="prevWeekBtn">◀</button>
+                        <div class="week-range" id="weekRange">Cargando...</div>
+                        <button class="week-nav-btn" onclick="cambiarSemana(1)" id="nextWeekBtn">▶</button>
+                    </div>
+                </div>
+
+                <!-- Contenedor del gráfico principal -->
+                <div class="weekly-chart-section">
+                    <div class="weekly-total">
+                        <div class="weekly-total-value" id="weeklyTotalValue">0</div>
+                        <div class="weekly-average" id="weeklyAverage">Media diaria: 0</div>
+                    </div>
+
+                    <div class="weekly-chart-container">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+
+                    <div class="metric-buttons">
+                        <button class="metric-btn active" onclick="cambiarMetrica('pasos')">👟 Pasos</button>
+                        <button class="metric-btn" onclick="cambiarMetrica('calorias')">🔥 Calorías</button>
+                        <button class="metric-btn" onclick="cambiarMetrica('tiempo')">⏱️ Tiempo</button>
+                        <button class="metric-btn" onclick="cambiarMetrica('distancia')">📍 Distancia</button>
+                    </div>
+                </div>
+
+                <!-- NUEVO v4.2: Resumen de estadísticas semanales -->
+                <div class="weekly-stats-summary">
+                    <div class="weekly-stat-card">
+                        <div class="weekly-stat-icon">👟</div>
+                        <div class="weekly-stat-label">Pasos</div>
+                        <div class="weekly-stat-value" id="summaryPasos">0</div>
+                        <div class="weekly-stat-subtitle" id="summaryPasosMedia">Media: 0</div>
+                    </div>
+                    <div class="weekly-stat-card">
+                        <div class="weekly-stat-icon">🔥</div>
+                        <div class="weekly-stat-label">Calorías</div>
+                        <div class="weekly-stat-value" id="summaryCalorias">0</div>
+                        <div class="weekly-stat-subtitle" id="summaryCaloriasMedia">Media: 0</div>
+                    </div>
+                    <div class="weekly-stat-card">
+                        <div class="weekly-stat-icon">⏱️</div>
+                        <div class="weekly-stat-label">Tiempo</div>
+                        <div class="weekly-stat-value" id="summaryTiempo">0</div>
+                        <div class="weekly-stat-subtitle" id="summaryTiempoMedia">Media: 0</div>
+                    </div>
+                    <div class="weekly-stat-card">
+                        <div class="weekly-stat-icon">📍</div>
+                        <div class="weekly-stat-label">Distancia</div>
+                        <div class="weekly-stat-value" id="summaryDistancia">0</div>
+                        <div class="weekly-stat-subtitle" id="summaryDistanciaMedia">Media: 0</div>
+                    </div>
+                </div>
+
+                <!-- NUEVO v4.2: Logros Semanales -->
+                <div class="weekly-achievements">
+                    <h3 class="achievements-title">
+                        <span>🏆</span>
+                        <span>Récords Semanales</span>
+                    </h3>
+                    <div class="achievements-grid">
+                        <div class="achievement-card">
+                            <div class="achievement-icon">👟</div>
+                            <div class="achievement-label">Semana con más pasos</div>
+                            <div class="achievement-value" id="achievementPasos">0</div>
+                            <div class="achievement-date" id="achievementPasosFecha">-</div>
+                        </div>
+                        <div class="achievement-card">
+                            <div class="achievement-icon">🔥</div>
+                            <div class="achievement-label">Semana con más calorías</div>
+                            <div class="achievement-value" id="achievementCalorias">0</div>
+                            <div class="achievement-date" id="achievementCaloriasFecha">-</div>
+                        </div>
+                        <div class="achievement-card">
+                            <div class="achievement-icon">⏱️</div>
+                            <div class="achievement-label">Semana con más tiempo</div>
+                            <div class="achievement-value" id="achievementTiempo">0</div>
+                            <div class="achievement-date" id="achievementTiempoFecha">-</div>
+                        </div>
+                        <div class="achievement-card">
+                            <div class="achievement-icon">📍</div>
+                            <div class="achievement-label">Semana con más distancia</div>
+                            <div class="achievement-value" id="achievementDistancia">0</div>
+                            <div class="achievement-date" id="achievementDistanciaFecha">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NUEVO v4.2: Récords Mensuales -->
+                <div class="monthly-achievements">
+                    <h3 class="achievements-title">
+                        <span>📅</span>
+                        <span>Récords Mensuales</span>
+                    </h3>
+                    <div class="achievements-grid">
+                        <div class="achievement-card monthly">
+                            <div class="achievement-icon">👟</div>
+                            <div class="achievement-label">Mes con más pasos</div>
+                            <div class="achievement-value" id="monthAchievementPasos">0</div>
+                            <div class="achievement-date" id="monthAchievementPasosFecha">-</div>
+                        </div>
+                        <div class="achievement-card monthly">
+                            <div class="achievement-icon">🔥</div>
+                            <div class="achievement-label">Mes con más calorías</div>
+                            <div class="achievement-value" id="monthAchievementCalorias">0</div>
+                            <div class="achievement-date" id="monthAchievementCaloriasFecha">-</div>
+                        </div>
+                        <div class="achievement-card monthly">
+                            <div class="achievement-icon">⏱️</div>
+                            <div class="achievement-label">Mes con más tiempo</div>
+                            <div class="achievement-value" id="monthAchievementTiempo">0</div>
+                            <div class="achievement-date" id="monthAchievementTiempoFecha">-</div>
+                        </div>
+                        <div class="achievement-card monthly">
+                            <div class="achievement-icon">📍</div>
+                            <div class="achievement-label">Mes con más distancia</div>
+                            <div class="achievement-value" id="monthAchievementDistancia">0</div>
+                            <div class="achievement-date" id="monthAchievementDistanciaFecha">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ESTADÍSTICAS -->
+        <div id="tabEstadisticas" class="tab-content">
+            <!-- NUEVO v4: Filtros por mes -->
+            <div class="stats-filters">
+                <div class="form-group" style="flex: 1; margin: 0;">
+                    <label>📅 Filtrar por mes</label>
+                    <select id="filtroMes" onchange="aplicarFiltroMes()">
+                        <option value="actual">Mes actual</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sección de Récords y Logros -->
+            <div style="background: var(--bg-card); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 30px;">
+                <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                    🏆 Récords y Logros
+                </h2>
+                <p style="color: var(--text-secondary); margin-bottom: 25px;" id="recordsSubtitle">
+                    Mostrando tus récords y logros del periodo seleccionado
+                </p>
+                <div class="stats-grid" id="statsContainer">
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📈 Evolución del Peso (Anual)</div>
+                <div class="chart-wrapper">
+                    <canvas id="pesoChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">👟 Pasos Diarios (Objetivo: 10,000)</div>
+                <div class="chart-wrapper">
+                    <canvas id="pasosChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">⏱️ Horas de Ayuno</div>
+                <div class="chart-wrapper">
+                    <canvas id="ayunoChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">🚫 Seguimiento de Dieta</div>
+                <div class="chart-wrapper">
+                    <canvas id="dietaChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CONFIGURACIÓN -->
+        <div id="tabConfiguracion" class="tab-content">
+            <div class="config-section">
+                <h2 class="config-title">💾 Gestión de Datos</h2>
+                <div class="config-buttons">
+                    <button class="btn btn-success" onclick="exportarDatos()">⬇️ Exportar Datos</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">⬆️ Importar Datos</button>
+                    <input type="file" id="fileInput" accept=".json" onchange="importarDatos(event)" style="display: none;">
+                    <button class="btn btn-danger" onclick="borrarTodosDatos()">🗑️ Borrar Todos los Datos</button>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h2 class="config-title">ℹ️ Información de la Aplicación</h2>
+                <p><strong>Versión:</strong> 4.3</p>
+                <p><strong>Total de Registros:</strong> <span id="totalRegistros">0</span></p>
+                <p><strong>Novedades v4.3:</strong></p>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li>✅ Nuevo sistema de comidas con dropdowns y chips/pills</li>
+                    <li>✅ Selección múltiple de items por comida</li>
+                    <li>✅ Diseño simétrico en 2 filas (Desayuno, Almuerzo, Comida / Merienda, Cena)</li>
+                    <li>✅ Opciones completas personalizadas por comida</li>
+                    <li>✅ Chips con colores diferenciados ("Me he pasado" en rojo, "Nada" en gris)</li>
+                    <li>✅ Interfaz limpia y profesional con animaciones</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Características v4.2:</strong></p>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li>✅ Vista semanal con 4 métricas y récords</li>
+                    <li>✅ Récords semanales y mensuales históricos</li>
+                    <li>✅ Barras rojas/verdes según objetivo de 10,000 pasos</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE AYUDA -->
+    <div id="modalAyuda" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>❓ Ayuda sobre Logros y Récords</h2>
+                <span class="close" onclick="cerrarAyuda()">&times;</span>
+            </div>
+            
+            <div class="help-section">
+                <h3>🎯 ¿Cómo funcionan los filtros?</h3>
+                <ul>
+                    <li>Puedes filtrar las estadísticas por mes usando el selector en la pestaña de Estadísticas</li>
+                    <li>Por defecto se muestra el <strong>mes actual</strong> (se actualiza automáticamente cada mes)</li>
+                    <li>Al seleccionar "Mes actual", siempre verás los datos del mes en curso</li>
+                    <li>Puedes seleccionar meses específicos del pasado para revisar estadísticas históricas</li>
+                    <li>Algunos logros se calculan solo del mes seleccionado, otros del histórico completo</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>📊 Logros y Récords Mensuales <span class="help-badge badge-mes">MES</span></h3>
+                <p style="margin-bottom: 10px; color: var(--text-secondary);">Estos se calculan solo del mes seleccionado:</p>
+                <ul>
+                    <li><strong>Total de Pasos:</strong> Suma de todos los pasos registrados en el mes</li>
+                    <li><strong>Días +10K Pasos:</strong> Días del mes en que superaste los 10,000 pasos</li>
+                    <li><strong>Promedio Pasos:</strong> Media diaria de pasos del mes</li>
+                    <li><strong>Promedio Ayuno:</strong> Media de horas de ayuno del mes</li>
+                    <li><strong>Cumplimiento Dieta:</strong> Porcentaje de días sin fallos en el mes</li>
+                    <li><strong>Constancia:</strong> Porcentaje de días registrados en el mes</li>
+                    <li><strong>Racha Actual:</strong> Días consecutivos registrando hasta hoy</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🏆 Récords Históricos <span class="help-badge badge-total">TOTAL</span></h3>
+                <p style="margin-bottom: 10px; color: var(--text-secondary);">Estos se calculan de todos tus registros históricos:</p>
+                <ul>
+                    <li><strong>Día con Más Pasos (Total):</strong> El día con más pasos de todo el histórico</li>
+                    <li><strong>Día con Menos Pasos (Total):</strong> El día con menos pasos de todo el histórico</li>
+                    <li><strong>Mejor Racha:</strong> La racha más larga de días consecutivos registrando</li>
+                    <li><strong>Mejor Racha +10K:</strong> Mayor número de días consecutivos superando 10,000 pasos</li>
+                    <li><strong>Mayor Ayuno:</strong> El mayor tiempo de ayuno registrado en tu histórico</li>
+                    <li><strong>Menor Ayuno:</strong> El menor tiempo de ayuno registrado en tu histórico</li>
+                    <li><strong>Peso Mínimo:</strong> El peso más bajo que has registrado</li>
+                    <li><strong>Peso Inicial:</strong> Tu peso en el primer registro</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>🎨 Códigos de colores</h3>
+                <ul>
+                    <li><strong style="color: var(--success);">Verde:</strong> Logros positivos y metas alcanzadas</li>
+                    <li><strong style="color: var(--warning);">Naranja:</strong> Advertencias y valores intermedios</li>
+                    <li><strong style="color: var(--danger);">Rojo:</strong> Valores mínimos o alertas</li>
+                    <li><strong style="color: var(--primary);">Azul:</strong> Información general</li>
+                    <li><strong style="color: var(--purple);">Morado:</strong> Objetivos y metas</li>
+                    <li><strong style="color: var(--cyan);">Cyan:</strong> Totales y acumulados</li>
+                    <li><strong style="color: var(--pink);">Rosa:</strong> Datos especiales</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>💡 Consejos</h3>
+                <ul>
+                    <li>El <strong>ayuno se calcula automáticamente</strong> basándose en la última comida del día anterior y la primera del día actual</li>
+                    <li>El objetivo de pasos recomendado es de <strong>10,000 pasos diarios</strong></li>
+                    <li>Un ayuno <strong>mayor de 12 horas</strong> se considera excelente (verde)</li>
+                    <li>Un ayuno <strong>entre 10-12 horas</strong> es aceptable (naranja)</li>
+                    <li>La aplicación detecta cuando escribes "me pasé" para contabilizar fallos en la dieta</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>📊 Pestaña Semanal (NUEVO v4.2)</h3>
+                <ul>
+                    <li><strong>Ubicación:</strong> Nueva pestaña independiente "📊 Semanal"</li>
+                    <li><strong>4 Métricas disponibles:</strong> Pasos, Calorías, Tiempo de actividad y Distancia</li>
+                    <li><strong>Navegación:</strong> Usa las flechas ◀ ▶ para ver semanas anteriores o volver a la actual</li>
+                    <li><strong>Cálculos automáticos:</strong></li>
+                    <ul style="margin-top: 5px; padding-left: 20px;">
+                        <li>🔥 <strong>Calorías:</strong> ~0.04 kcal por paso (aproximado)</li>
+                        <li>⏱️ <strong>Tiempo:</strong> basado en 110 pasos/minuto de media</li>
+                        <li>📍 <strong>Distancia:</strong> ~0.75 metros por paso</li>
+                    </ul>
+                    <li><strong>Semana:</strong> De lunes a domingo</li>
+                    <li>Los datos se muestran como <strong>total semanal</strong> y <strong>media diaria</strong></li>
+                    <li><strong>Cambio de métrica:</strong> Usa los 4 botones en la parte inferior</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let registros = [];
+        let registroEditando = null;
+        let pesoChart, pasosChart, ayunoChart, dietaChart;
+        let filtrosActivos = { desde: null, hasta: null };
+        let mesSeleccionado = 'actual'; // Mes actual por defecto
+
+        // NUEVO v4.2: Variables para vista semanal
+        let weeklyChart = null;
+        let semanaActual = 0; // 0 = semana actual, -1 = semana anterior, etc.
+        let metricaActual = 'pasos'; // pasos, calorias, tiempo, distancia
+
+        // NUEVO v4.3: Variables para sistema de comidas con chips
+        let mealSelections = {
+            desayuno: [],
+            almuerzo: [],
+            comida: [],
+            merienda: [],
+            cena: []
+        };
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarDatos();
+            document.getElementById('fecha').valueAsDate = new Date();
+            actualizarVistas();
+            inicializarSelectorMeses();
+        });
+
+        // NUEVO v4: Inicializar selector de meses
+        function inicializarSelectorMeses() {
+            if (registros.length === 0) return;
+
+            const select = document.getElementById('filtroMes');
+            const mesesUnicos = new Set();
+            
+            registros.forEach(r => {
+                const fecha = new Date(r.fecha + 'T00:00:00');
+                const mesAno = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                mesesUnicos.add(mesAno);
+            });
+
+            const mesesArray = Array.from(mesesUnicos).sort().reverse();
+            
+            // Guardar la opción actual antes de limpiar
+            const valorActual = select.value;
+            
+            // Limpiar opciones existentes excepto "Mes actual"
+            select.innerHTML = '<option value="actual">Mes actual</option>';
+            
+            // Añadir opciones de meses
+            mesesArray.forEach(mesAno => {
+                const [ano, mes] = mesAno.split('-');
+                const fecha = new Date(ano, mes - 1);
+                const nombreMes = fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                const option = document.createElement('option');
+                option.value = mesAno;
+                option.textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+                select.appendChild(option);
+            });
+
+            // Restaurar la selección anterior si existe
+            if (valorActual && valorActual !== 'actual') {
+                const optionExists = Array.from(select.options).some(opt => opt.value === valorActual);
+                if (optionExists) {
+                    select.value = valorActual;
+                }
+            }
+        }
+
+        // NUEVO v4: Aplicar filtro de mes
+        function aplicarFiltroMes() {
+            mesSeleccionado = document.getElementById('filtroMes').value;
+            mostrarEstadisticas();
+        }
+
+        // NUEVO v4: Obtener registros filtrados por mes - ACTUALIZADO para mes actual dinámico
+        function obtenerRegistrosPorMes() {
+            if (mesSeleccionado === 'actual') {
+                // Siempre usar el mes ACTUAL del sistema
+                const ahora = new Date();
+                const mesActual = ahora.getMonth();
+                const anoActual = ahora.getFullYear();
+                
+                return registros.filter(r => {
+                    const fecha = new Date(r.fecha + 'T00:00:00');
+                    return fecha.getMonth() === mesActual && fecha.getFullYear() === anoActual;
+                });
+            } else {
+                const [ano, mes] = mesSeleccionado.split('-');
+                return registros.filter(r => {
+                    const fecha = new Date(r.fecha + 'T00:00:00');
+                    return fecha.getFullYear() === parseInt(ano) && fecha.getMonth() === parseInt(mes) - 1;
+                });
+            }
+        }
+
+        // NUEVO: Función para obtener el nombre del mes/periodo actual
+        function obtenerNombrePeriodoActual() {
+            if (mesSeleccionado === 'actual') {
+                const ahora = new Date();
+                const nombreMes = ahora.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                return nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+            } else {
+                return document.getElementById('filtroMes').selectedOptions[0].text;
+            }
+        }
+
+        // NUEVO v4: Modal de ayuda
+        function mostrarAyuda() {
+            document.getElementById('modalAyuda').style.display = 'block';
+        }
+
+        function cerrarAyuda() {
+            document.getElementById('modalAyuda').style.display = 'none';
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalAyuda');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Gestión de tabs
+        function cambiarTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+            
+            if (tab === 'historial') mostrarHistorial();
+            if (tab === 'semanal') actualizarVistaSemanal(); // NUEVO v4.2
+            if (tab === 'estadisticas') {
+                inicializarSelectorMeses();
+                mostrarEstadisticas();
+            }
+            if (tab === 'configuracion') actualizarInfoConfig();
+        }
+
+        // NUEVO: Función para aplicar plantillas rápidas
+        // NUEVO v4.3: Funciones para sistema de comidas con chips
+        function addMealChip(mealType, selectElement) {
+            const value = selectElement.value;
+            const option = selectElement.options[selectElement.selectedIndex];
+            
+            if (!value) return;
+            
+            // Si es "Nada", limpiar todos los chips anteriores
+            if (option.dataset.none === 'true') {
+                mealSelections[mealType] = [value];
+                renderMealChips(mealType);
+                selectElement.value = '';
+                return;
+            }
+            
+            // Si ya hay "Nada", reemplazarlo
+            if (mealSelections[mealType].includes('Nada')) {
+                mealSelections[mealType] = [];
+            }
+            
+            // Añadir si no existe ya
+            if (!mealSelections[mealType].includes(value)) {
+                mealSelections[mealType].push(value);
+                renderMealChips(mealType);
+            }
+            
+            // Resetear selector
+            selectElement.value = '';
+        }
+
+        function removeMealChip(mealType, index) {
+            mealSelections[mealType].splice(index, 1);
+            renderMealChips(mealType);
+        }
+
+        function renderMealChips(mealType) {
+            const container = document.getElementById(mealType + 'Chips');
+            container.innerHTML = '';
+            
+            mealSelections[mealType].forEach((item, index) => {
+                const chip = document.createElement('div');
+                let chipClass = 'meal-chip';
+                
+                if (item === 'Me he pasado') chipClass += ' special';
+                if (item === 'Nada') chipClass += ' none';
+                
+                chip.className = chipClass;
+                chip.innerHTML = `
+                    <span>${item}</span>
+                    <button class="chip-remove" onclick="removeMealChip('${mealType}', ${index})">×</button>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function getMealDescription(mealType) {
+            return mealSelections[mealType].join(', ') || '';
+        }
+
+        function clearAllMealChips() {
+            Object.keys(mealSelections).forEach(meal => {
+                mealSelections[meal] = [];
+                renderMealChips(meal);
+            });
+        }
+
+        function loadMealChipsFromDescription(mealType, description) {
+            if (!description) {
+                mealSelections[mealType] = [];
+                return;
+            }
+            mealSelections[mealType] = description.split(', ').filter(item => item.trim());
+            renderMealChips(mealType);
+        }
+
+        // NUEVA: Función para calcular horas de ayuno
+        function calcularAyuno(fechaActual) {
+            // Buscar el registro del día anterior
+            const fecha = new Date(fechaActual + 'T00:00:00');
+            const fechaAnterior = new Date(fecha);
+            fechaAnterior.setDate(fechaAnterior.getDate() - 1);
+            const fechaAnteriorStr = fechaAnterior.toISOString().split('T')[0];
+            
+            const registroAnterior = registros.find(r => r.fecha === fechaAnteriorStr);
+            
+            if (!registroAnterior) {
+                return null; // No hay registro anterior
+            }
+
+            // Buscar la última comida del día anterior (que tenga hora Y descripción)
+            let ultimaHora = null;
+            const comidas = ['cena', 'merienda', 'comida', 'almuerzo', 'desayuno'];
+            
+            for (let comida of comidas) {
+                if (registroAnterior[comida]?.hora && registroAnterior[comida]?.descripcion) {
+                    ultimaHora = registroAnterior[comida].hora;
+                    break;
+                }
+            }
+
+            if (!ultimaHora) {
+                return null; // No hay hora de comida en el día anterior
+            }
+
+            // Buscar la primera comida del día actual (que tenga hora Y descripción/chips)
+            const registroActual = {
+                desayuno: { 
+                    hora: document.getElementById('desayunoHora').value,
+                    descripcion: getMealDescription('desayuno')
+                },
+                almuerzo: { 
+                    hora: document.getElementById('almuerzoHora').value,
+                    descripcion: getMealDescription('almuerzo')
+                },
+                comida: { 
+                    hora: document.getElementById('comidaHora').value,
+                    descripcion: getMealDescription('comida')
+                },
+                merienda: { 
+                    hora: document.getElementById('meriendaHora').value,
+                    descripcion: getMealDescription('merienda')
+                },
+                cena: { 
+                    hora: document.getElementById('cenaHora').value,
+                    descripcion: getMealDescription('cena')
+                }
+            };
+
+            let primeraHora = null;
+            const comidasActual = ['desayuno', 'almuerzo', 'comida', 'merienda', 'cena'];
+            
+            for (let comida of comidasActual) {
+                if (registroActual[comida].hora && registroActual[comida].descripcion) {
+                    primeraHora = registroActual[comida].hora;
+                    break;
+                }
+            }
+
+            if (!primeraHora) {
+                return null; // No hay primera comida en el día actual
+            }
+
+            // Calcular diferencia
+            const [horasAnt, minutosAnt] = ultimaHora.split(':').map(Number);
+            const [horasAct, minutosAct] = primeraHora.split(':').map(Number);
+            
+            const minutosAnterior = horasAnt * 60 + minutosAnt;
+            const minutosActual = horasAct * 60 + minutosAct;
+            
+            // Calcular diferencia asumiendo que hay un día de por medio
+            let diferenciaMinutos = minutosActual + (24 * 60) - minutosAnterior;
+            
+            const horasAyuno = (diferenciaMinutos / 60).toFixed(1);
+            return horasAyuno;
+        }
+
+        // Guardar registro (modificado para calcular ayuno)
+        function guardarRegistro() {
+            const fecha = document.getElementById('fecha').value;
+            
+            if (!fecha) {
+                mostrarAlerta('⚠️ Por favor, selecciona una fecha', 'warning');
+                return;
+            }
+
+            // Calcular ayuno automáticamente
+            const ayunoCalculado = calcularAyuno(fecha);
+
+            const registro = {
+                id: registroEditando ? registroEditando.id : Date.now(),
+                fecha: fecha,
+                peso: document.getElementById('peso').value,
+                pasos: document.getElementById('pasos').value,
+                ayuno: ayunoCalculado || document.getElementById('ayuno').value, // Usar calculado o manual
+                desayuno: {
+                    hora: document.getElementById('desayunoHora').value,
+                    descripcion: getMealDescription('desayuno')
+                },
+                almuerzo: {
+                    hora: document.getElementById('almuerzoHora').value,
+                    descripcion: getMealDescription('almuerzo')
+                },
+                comida: {
+                    hora: document.getElementById('comidaHora').value,
+                    descripcion: getMealDescription('comida')
+                },
+                merienda: {
+                    hora: document.getElementById('meriendaHora').value,
+                    descripcion: getMealDescription('merienda')
+                },
+                cena: {
+                    hora: document.getElementById('cenaHora').value,
+                    descripcion: getMealDescription('cena')
+                },
+                observaciones: document.getElementById('observaciones').value
+            };
+
+            if (registroEditando) {
+                const index = registros.findIndex(r => r.id === registroEditando.id);
+                registros[index] = registro;
+                mostrarAlerta('✅ Registro actualizado correctamente', 'success');
+                registroEditando = null;
+            } else {
+                const existe = registros.findIndex(r => r.fecha === fecha);
+                if (existe !== -1) {
+                    if (!confirm('Ya existe un registro para esta fecha. ¿Deseas reemplazarlo?')) {
+                        return;
+                    }
+                    registros[existe] = registro;
+                } else {
+                    registros.push(registro);
+                }
+                mostrarAlerta('✅ Registro guardado correctamente' + (ayunoCalculado ? ' (Ayuno calculado: ' + ayunoCalculado + 'h)' : ''), 'success');
+            }
+
+            guardarDatos();
+            limpiarFormulario();
+            actualizarVistas();
+            inicializarSelectorMeses();
+            
+            // Recalcular ayuno del día siguiente si existe
+            recalcularAyunoSiguiente(fecha);
+        }
+
+        // NUEVA: Recalcular ayuno del día siguiente cuando se actualiza un registro
+        function recalcularAyunoSiguiente(fechaActualizada) {
+            const fecha = new Date(fechaActualizada + 'T00:00:00');
+            const fechaSiguiente = new Date(fecha);
+            fechaSiguiente.setDate(fechaSiguiente.getDate() + 1);
+            const fechaSiguienteStr = fechaSiguiente.toISOString().split('T')[0];
+            
+            const registroSiguiente = registros.find(r => r.fecha === fechaSiguienteStr);
+            
+            if (registroSiguiente) {
+                // Recalcular ayuno del día siguiente
+                const registroActual = registros.find(r => r.fecha === fechaActualizada);
+                
+                if (registroActual) {
+                    let ultimaHora = null;
+                    const comidas = ['cena', 'merienda', 'comida', 'almuerzo', 'desayuno'];
+                    
+                    for (let comida of comidas) {
+                        if (registroActual[comida]?.hora && registroActual[comida]?.descripcion) {
+                            ultimaHora = registroActual[comida].hora;
+                            break;
+                        }
+                    }
+
+                    if (ultimaHora) {
+                        let primeraHoraSiguiente = null;
+                        const comidasSiguiente = ['desayuno', 'almuerzo', 'comida', 'merienda', 'cena'];
+                        
+                        for (let comida of comidasSiguiente) {
+                            if (registroSiguiente[comida]?.hora && registroSiguiente[comida]?.descripcion) {
+                                primeraHoraSiguiente = registroSiguiente[comida].hora;
+                                break;
+                            }
+                        }
+
+                        if (primeraHoraSiguiente) {
+                            const [horasAnt, minutosAnt] = ultimaHora.split(':').map(Number);
+                            const [horasAct, minutosAct] = primeraHoraSiguiente.split(':').map(Number);
+                            
+                            const minutosAnterior = horasAnt * 60 + minutosAnt;
+                            const minutosActual = horasAct * 60 + minutosAct;
+                            
+                            let diferenciaMinutos = minutosActual + (24 * 60) - minutosAnterior;
+                            const horasAyuno = (diferenciaMinutos / 60).toFixed(1);
+                            
+                            registroSiguiente.ayuno = horasAyuno;
+                            guardarDatos();
+                        }
+                    }
+                }
+            }
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('fecha').valueAsDate = new Date();
+            document.getElementById('peso').value = '';
+            document.getElementById('pasos').value = '';
+            document.getElementById('ayuno').value = '';
+            
+            ['desayuno', 'almuerzo', 'comida', 'merienda', 'cena'].forEach(comida => {
+                document.getElementById(comida + 'Hora').value = '';
+            });
+            
+            // NUEVO v4.3: Limpiar chips de comidas
+            clearAllMealChips();
+            
+            document.getElementById('observaciones').value = '';
+            registroEditando = null;
+        }
+
+        // MODIFICADO: Editar registro con cálculo de ayuno
+        function editarRegistro(id) {
+            const registro = registros.find(r => r.id === id);
+            if (!registro) return;
+
+            registroEditando = registro;
+            
+            document.getElementById('fecha').value = registro.fecha;
+            document.getElementById('peso').value = registro.peso || '';
+            document.getElementById('pasos').value = registro.pasos || '';
+            document.getElementById('ayuno').value = registro.ayuno || '';
+
+            ['desayuno', 'almuerzo', 'comida', 'merienda', 'cena'].forEach(comida => {
+                document.getElementById(comida + 'Hora').value = registro[comida]?.hora || '';
+                // NUEVO v4.3: Cargar chips desde descripción
+                loadMealChipsFromDescription(comida, registro[comida]?.descripcion || '');
+            });
+
+            document.getElementById('observaciones').value = registro.observaciones || '';
+
+            cambiarTab('registro');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            mostrarAlerta('📝 Editando registro del ' + formatFecha(registro.fecha), 'warning');
+        }
+
+        function eliminarRegistro(id) {
+            if (!confirm('¿Estás seguro de eliminar este registro?')) return;
+            
+            registros = registros.filter(r => r.id !== id);
+            guardarDatos();
+            actualizarVistas();
+            mostrarHistorial();
+            inicializarSelectorMeses();
+            mostrarAlerta('🗑️ Registro eliminado', 'success');
+        }
+
+        // NUEVO: Sistema de filtros
+        function aplicarFiltros() {
+            const desde = document.getElementById('filtroDesde').value;
+            const hasta = document.getElementById('filtroHasta').value;
+            
+            filtrosActivos = { desde, hasta };
+            mostrarHistorial();
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('filtroDesde').value = '';
+            document.getElementById('filtroHasta').value = '';
+            filtrosActivos = { desde: null, hasta: null };
+            mostrarHistorial();
+        }
+
+        function mostrarHistorial() {
+            const tbody = document.getElementById('historialBody');
+            tbody.innerHTML = '';
+
+            // Aplicar filtros si existen
+            let registrosFiltrados = [...registros];
+            
+            if (filtrosActivos.desde) {
+                registrosFiltrados = registrosFiltrados.filter(r => r.fecha >= filtrosActivos.desde);
+            }
+            
+            if (filtrosActivos.hasta) {
+                registrosFiltrados = registrosFiltrados.filter(r => r.fecha <= filtrosActivos.hasta);
+            }
+
+            const sorted = registrosFiltrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+            sorted.forEach(registro => {
+                const row = tbody.insertRow();
+                
+                // Fecha
+                const fechaCell = row.insertCell();
+                fechaCell.textContent = formatFecha(registro.fecha);
+                
+                // Peso
+                const pesoCell = row.insertCell();
+                pesoCell.textContent = registro.peso ? registro.peso + ' kg' : '-';
+                
+                // Pasos
+                const pasosCell = row.insertCell();
+                if (registro.pasos) {
+                    const pasos = parseInt(registro.pasos);
+                    const cumple = pasos >= 10000;
+                    pasosCell.innerHTML = `${cumple ? '✅' : '⚠️'} ${pasos.toLocaleString()}`;
+                } else {
+                    pasosCell.textContent = '-';
+                }
+                
+                // Ayuno
+                const ayunoCell = row.insertCell();
+                if (registro.ayuno) {
+                    const ayuno = parseFloat(registro.ayuno);
+                    let clase = '';
+                    let emoji = '';
+                    if (ayuno >= 12) {
+                        clase = 'ayuno-excelente';
+                        emoji = '✅';
+                    } else if (ayuno >= 10) {
+                        clase = 'ayuno-bueno';
+                        emoji = '⚠️';
+                    } else {
+                        clase = 'ayuno-insuficiente';
+                        emoji = '❌';
+                    }
+                    ayunoCell.innerHTML = `<span class="ayuno-indicator ${clase}">${emoji} ${ayuno}h</span>`;
+                } else {
+                    ayunoCell.textContent = '-';
+                }
+                
+                // Comidas
+                const comidasCell = row.insertCell();
+                const comidas = [];
+                if (registro.desayuno?.descripcion) comidas.push('🌅');
+                if (registro.almuerzo?.descripcion) comidas.push('🍎');
+                if (registro.comida?.descripcion) comidas.push('🍽️');
+                if (registro.merienda?.descripcion) comidas.push('🍪');
+                if (registro.cena?.descripcion) comidas.push('🌙');
+                comidasCell.textContent = comidas.join(' ');
+                
+                // Acciones
+                const accionesCell = row.insertCell();
+                accionesCell.innerHTML = `
+                    <div class="acciones">
+                        <button class="btn-icon" onclick="editarRegistro(${registro.id})" title="Editar">✏️</button>
+                        <button class="btn-icon danger" onclick="eliminarRegistro(${registro.id})" title="Eliminar">🗑️</button>
+                    </div>
+                `;
+            });
+        }
+
+        function actualizarVistas() {
+            mostrarHistorial();
+            if (document.getElementById('tabEstadisticas').classList.contains('active')) {
+                mostrarEstadisticas();
+            }
+        }
+
+        function actualizarInfoConfig() {
+            document.getElementById('totalRegistros').textContent = registros.length;
+        }
+
+        // Alertas
+        function mostrarAlerta(mensaje, tipo) {
+            const container = document.getElementById('alertaContainer');
+            const alerta = document.createElement('div');
+            alerta.className = `alerta ${tipo}`;
+            alerta.textContent = mensaje;
+            
+            container.innerHTML = '';
+            container.appendChild(alerta);
+            
+            setTimeout(() => alerta.remove(), 5000);
+        }
+
+        // Estadísticas
+        function mostrarEstadisticas() {
+            calcularEstadisticas();
+            crearGraficos();
+        }
+
+        // MODIFICADO v4: Calcular estadísticas con filtro por mes
+        function calcularEstadisticas() {
+            const container = document.getElementById('statsContainer');
+            container.innerHTML = '';
+
+            if (registros.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">No hay datos para mostrar estadísticas</p>';
+                return;
+            }
+
+            // Obtener registros filtrados por mes
+            const registrosMes = obtenerRegistrosPorMes();
+            
+            if (registrosMes.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">No hay datos para el mes seleccionado</p>';
+                return;
+            }
+
+            const sorted = [...registrosMes].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            const todosRegistros = [...registros].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            
+            // Actualizar subtítulo con el nombre del periodo actual
+            const nombrePeriodo = obtenerNombrePeriodoActual();
+            document.getElementById('recordsSubtitle').textContent = 
+                `Mostrando ${registrosMes.length} récords y logros de ${nombrePeriodo.toLowerCase()}`;
+
+            // 1. TOTAL DE PASOS (MES)
+            const registrosConPasos = registrosMes.filter(r => r.pasos);
+            if (registrosConPasos.length > 0) {
+                const totalPasos = registrosConPasos.reduce((sum, r) => sum + parseInt(r.pasos), 0);
+                const kmRecorridos = (totalPasos * 0.00075).toFixed(2);
+                
+                container.innerHTML += `
+                    <div class="stat-card cyan">
+                        <div class="stat-icon">👣</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total de Pasos</div>
+                            <div class="stat-value">${totalPasos.toLocaleString()}</div>
+                            <div class="stat-trend">≈ ${kmRecorridos} km recorridos</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 2. DÍA CON MÁS PASOS (MES)
+            if (registrosConPasos.length > 0) {
+                const maxPasos = Math.max(...registrosConPasos.map(r => parseInt(r.pasos)));
+                const diaMaxPasos = registrosConPasos.find(r => parseInt(r.pasos) === maxPasos);
+                
+                container.innerHTML += `
+                    <div class="stat-card success">
+                        <div class="stat-icon">🏃</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Día con Más Pasos (Mes)</div>
+                            <div class="stat-value">${maxPasos.toLocaleString()} <small>pasos</small></div>
+                            <div class="stat-trend">${formatFecha(diaMaxPasos.fecha)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 3. DÍA CON MENOS PASOS (MES)
+            if (registrosConPasos.length > 0) {
+                const minPasos = Math.min(...registrosConPasos.map(r => parseInt(r.pasos)));
+                const diaMinPasos = registrosConPasos.find(r => parseInt(r.pasos) === minPasos);
+                
+                container.innerHTML += `
+                    <div class="stat-card danger">
+                        <div class="stat-icon">😴</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Día con Menos Pasos (Mes)</div>
+                            <div class="stat-value">${minPasos.toLocaleString()} <small>pasos</small></div>
+                            <div class="stat-trend">${formatFecha(diaMinPasos.fecha)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 4. DÍA CON MÁS PASOS (TOTAL HISTÓRICO)
+            const todosConPasos = todosRegistros.filter(r => r.pasos);
+            if (todosConPasos.length > 0) {
+                const maxPasosTotal = Math.max(...todosConPasos.map(r => parseInt(r.pasos)));
+                const diaMaxPasosTotal = todosConPasos.find(r => parseInt(r.pasos) === maxPasosTotal);
+                
+                container.innerHTML += `
+                    <div class="stat-card success">
+                        <div class="stat-icon">🥇</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Día con Más Pasos (Total)</div>
+                            <div class="stat-value">${maxPasosTotal.toLocaleString()} <small>pasos</small></div>
+                            <div class="stat-trend">🏆 ${formatFecha(diaMaxPasosTotal.fecha)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 5. DÍA CON MENOS PASOS (TOTAL HISTÓRICO)
+            if (todosConPasos.length > 0) {
+                const minPasosTotal = Math.min(...todosConPasos.map(r => parseInt(r.pasos)));
+                const diaMinPasosTotal = todosConPasos.find(r => parseInt(r.pasos) === minPasosTotal);
+                
+                container.innerHTML += `
+                    <div class="stat-card danger">
+                        <div class="stat-icon">🥉</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Día con Menos Pasos (Total)</div>
+                            <div class="stat-value">${minPasosTotal.toLocaleString()} <small>pasos</small></div>
+                            <div class="stat-trend">🏆 ${formatFecha(diaMinPasosTotal.fecha)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 6. DÍAS +10K PASOS (MES)
+            if (registrosConPasos.length > 0) {
+                const dias10k = registrosConPasos.filter(r => parseInt(r.pasos) >= 10000).length;
+                const porcentaje = ((dias10k / registrosConPasos.length) * 100).toFixed(0);
+                
+                container.innerHTML += `
+                    <div class="stat-card purple">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Días +10K Pasos</div>
+                            <div class="stat-value">${dias10k} <small>días</small></div>
+                            <div class="stat-trend">${porcentaje}% del mes</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 7. MEJOR RACHA +10K PASOS (TOTAL HISTÓRICO)
+            const mejorRacha10k = calcularMejorRacha10k();
+            container.innerHTML += `
+                <div class="stat-card purple">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Mejor Racha +10K</div>
+                        <div class="stat-value">${mejorRacha10k} <small>días</small></div>
+                        <div class="stat-trend">🏆 Récord histórico</div>
+                    </div>
+                </div>
+            `;
+
+            // 8. MAYOR AYUNO (TOTAL HISTÓRICO)
+            const todosConAyuno = todosRegistros.filter(r => r.ayuno);
+            if (todosConAyuno.length > 0) {
+                const maxAyuno = Math.max(...todosConAyuno.map(r => parseFloat(r.ayuno)));
+                const diaMaxAyuno = todosConAyuno.find(r => parseFloat(r.ayuno) === maxAyuno);
+                
+                container.innerHTML += `
+                    <div class="stat-card pink">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Mayor Ayuno (Total)</div>
+                            <div class="stat-value">${maxAyuno} <small>horas</small></div>
+                            <div class="stat-trend">🏆 ${formatFecha(diaMaxAyuno.fecha)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 9. MENOR AYUNO (TOTAL HISTÓRICO)
+            if (todosConAyuno.length > 0) {
+                const minAyuno = Math.min(...todosConAyuno.map(r => parseFloat(r.ayuno)));
+                const diaMinAyuno = todosConAyuno.find(r => parseFloat(r.ayuno) === minAyuno);
+                
+                container.innerHTML += `
+                    <div class="stat-card warning">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Menor Ayuno (Total)</div>
+                            <div class="stat-value">${minAyuno} <small>horas</small></div>
+                            <div class="stat-trend">🏆 ${formatFecha(diaMinAyuno.fecha)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 10. PESO MÍNIMO (TOTAL HISTÓRICO)
+            const todosConPeso = todosRegistros.filter(r => r.peso);
+            if (todosConPeso.length > 0) {
+                const minPeso = Math.min(...todosConPeso.map(r => parseFloat(r.peso)));
+                const diaPesoMin = todosConPeso.find(r => parseFloat(r.peso) === minPeso);
+                
+                container.innerHTML += `
+                    <div class="stat-card success">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Peso Mínimo (Total)</div>
+                            <div class="stat-value">${minPeso} <small>kg</small></div>
+                            <div class="stat-trend">🏆 ${formatFecha(diaPesoMin.fecha)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 11. PESO INICIAL (TOTAL HISTÓRICO)
+            if (todosConPeso.length > 0) {
+                const pesoInicial = parseFloat(todosRegistros.find(r => r.peso)?.peso || 0);
+                const fechaInicial = todosRegistros.find(r => r.peso)?.fecha;
+                const pesoActual = parseFloat(todosConPeso[todosConPeso.length - 1].peso);
+                const perdido = (pesoInicial - pesoActual).toFixed(1);
+                
+                container.innerHTML += `
+                    <div class="stat-card pink">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Peso Inicial</div>
+                            <div class="stat-value">${pesoInicial} <small>kg</small></div>
+                            <div class="stat-trend">Has perdido ${perdido} kg</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 12. RACHA ACTUAL
+            const racha = calcularRachaActual();
+            container.innerHTML += `
+                <div class="stat-card success">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Racha Actual</div>
+                        <div class="stat-value">${racha} <small>días</small></div>
+                        <div class="stat-trend">¡Sigue así!</div>
+                    </div>
+                </div>
+            `;
+
+            // 13. MEJOR RACHA (TOTAL HISTÓRICO)
+            const mejorRacha = calcularMejorRacha();
+            container.innerHTML += `
+                <div class="stat-card warning">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Mejor Racha (Total)</div>
+                        <div class="stat-value">${mejorRacha} <small>días</small></div>
+                        <div class="stat-trend">🏆 Días consecutivos</div>
+                    </div>
+                </div>
+            `;
+
+            // 14. CONSTANCIA (MES)
+            const primerDiaMes = new Date(sorted[0].fecha);
+            const ultimoDiaMes = new Date(sorted[sorted.length - 1].fecha);
+            const diasTotalesMes = Math.ceil((ultimoDiaMes - primerDiaMes) / (1000 * 60 * 60 * 24)) + 1;
+            const constancia = ((registrosMes.length / diasTotalesMes) * 100).toFixed(0);
+            
+            container.innerHTML += `
+                <div class="stat-card warning">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Constancia</div>
+                        <div class="stat-value">${constancia} <small>%</small></div>
+                        <div class="stat-trend">${registrosMes.length} de ${diasTotalesMes} días</div>
+                    </div>
+                </div>
+            `;
+
+            // 15. CUMPLIMIENTO DIETA (MES)
+            const diasFallo = registrosMes.filter(r => {
+                const texto = [
+                    r.desayuno?.descripcion || '',
+                    r.almuerzo?.descripcion || '',
+                    r.comida?.descripcion || '',
+                    r.merienda?.descripcion || '',
+                    r.cena?.descripcion || ''
+                ].join(' ').toLowerCase();
+                return texto.includes('me pas') || texto.includes('me he pas');
+            }).length;
+
+            const cumplimiento = registrosMes.length > 0 ? (((registrosMes.length - diasFallo) / registrosMes.length) * 100).toFixed(0) : 0;
+            const clase = cumplimiento >= 80 ? 'success' : cumplimiento >= 60 ? 'warning' : 'danger';
+            
+            container.innerHTML += `
+                <div class="stat-card ${clase}">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Cumplimiento</div>
+                        <div class="stat-value">${cumplimiento} <small>%</small></div>
+                        <div class="stat-trend">${diasFallo} días con fallos</div>
+                    </div>
+                </div>
+            `;
+
+            // 16. PROMEDIO PASOS (MES)
+            if (registrosConPasos.length > 0) {
+                const promedioPasos = Math.round(registrosConPasos.reduce((sum, r) => sum + parseInt(r.pasos), 0) / registrosConPasos.length);
+                
+                container.innerHTML += `
+                    <div class="stat-card cyan">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Promedio Pasos</div>
+                            <div class="stat-value">${promedioPasos.toLocaleString()}</div>
+                            <div class="stat-trend">Por día</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 17. PROMEDIO AYUNO (MES)
+            const registrosConAyunoMes = registrosMes.filter(r => r.ayuno);
+            if (registrosConAyunoMes.length > 0) {
+                const promedioAyuno = (registrosConAyunoMes.reduce((sum, r) => sum + parseFloat(r.ayuno), 0) / registrosConAyunoMes.length).toFixed(1);
+                const claseAyuno = promedioAyuno >= 12 ? 'success' : promedioAyuno >= 10 ? 'warning' : 'danger';
+                
+                container.innerHTML += `
+                    <div class="stat-card ${claseAyuno}">
+                        <div class="stat-icon">⏰</div>
+                        <div class="stat-content">
+                            <div class="stat-label">Promedio Ayuno</div>
+                            <div class="stat-value">${promedioAyuno} <small>h</small></div>
+                            <div class="stat-trend">Por día</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 18. TOTAL DÍAS REGISTRADOS (MES)
+            const nombrePeriodoCorto = mesSeleccionado === 'actual' ? 'este mes' : 'el periodo';
+            container.innerHTML += `
+                <div class="stat-card purple">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Total Registros</div>
+                        <div class="stat-value">${registrosMes.length}</div>
+                        <div class="stat-trend">En ${nombrePeriodoCorto}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calcularRachaActual() {
+            if (registros.length === 0) return 0;
+
+            const sorted = [...registros].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            let racha = 0;
+            let fechaActual = new Date();
+            fechaActual.setHours(0, 0, 0, 0);
+
+            for (let registro of sorted) {
+                const fechaRegistro = new Date(registro.fecha + 'T00:00:00');
+                const diferenciaDias = Math.floor((fechaActual - fechaRegistro) / (1000 * 60 * 60 * 24));
+
+                if (diferenciaDias === racha || (racha === 0 && diferenciaDias <= 1)) {
+                    racha++;
+                } else {
+                    break;
+                }
+            }
+
+            return racha;
+        }
+
+        function calcularMejorRacha() {
+            if (registros.length === 0) return 0;
+
+            const sorted = [...registros].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            let mejorRacha = 0;
+            let rachaActual = 1;
+
+            for (let i = 1; i < sorted.length; i++) {
+                const fechaAnterior = new Date(sorted[i - 1].fecha);
+                const fechaActual = new Date(sorted[i].fecha);
+                const diferencia = Math.floor((fechaActual - fechaAnterior) / (1000 * 60 * 60 * 24));
+
+                if (diferencia === 1) {
+                    rachaActual++;
+                } else {
+                    mejorRacha = Math.max(mejorRacha, rachaActual);
+                    rachaActual = 1;
+                }
+            }
+
+            return Math.max(mejorRacha, rachaActual);
+        }
+
+        // NUEVO v4: Calcular mejor racha de días consecutivos superando 10k pasos
+        function calcularMejorRacha10k() {
+            if (registros.length === 0) return 0;
+
+            const sorted = [...registros].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            const registrosCon10k = sorted.filter(r => r.pasos && parseInt(r.pasos) >= 10000);
+            
+            if (registrosCon10k.length === 0) return 0;
+
+            let mejorRacha = 0;
+            let rachaActual = 1;
+
+            for (let i = 1; i < registrosCon10k.length; i++) {
+                const fechaAnterior = new Date(registrosCon10k[i - 1].fecha);
+                const fechaActual = new Date(registrosCon10k[i].fecha);
+                const diferencia = Math.floor((fechaActual - fechaAnterior) / (1000 * 60 * 60 * 24));
+
+                if (diferencia === 1) {
+                    rachaActual++;
+                } else {
+                    mejorRacha = Math.max(mejorRacha, rachaActual);
+                    rachaActual = 1;
+                }
+            }
+
+            return Math.max(mejorRacha, rachaActual);
+        }
+
+        // MODIFICADO v4.1: Crear gráficos - La gráfica de peso muestra datos anuales
+        function crearGraficos() {
+            const registrosMes = obtenerRegistrosPorMes();
+            
+            if (registrosMes.length === 0) return;
+
+            const sorted = [...registrosMes].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            const fechas = sorted.map(r => formatFecha(r.fecha));
+
+            // Gráfico de peso - ÚLTIMOS 12 MESES
+            const fechaHoy = new Date();
+            const fechaHaceUnAno = new Date();
+            fechaHaceUnAno.setFullYear(fechaHaceUnAno.getFullYear() - 1);
+            
+            const registrosUltimoAno = registros.filter(r => {
+                const fecha = new Date(r.fecha + 'T00:00:00');
+                return fecha >= fechaHaceUnAno && fecha <= fechaHoy;
+            }).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            
+            // Si no hay datos del último año, mostrar todos los datos históricos
+            const datosPeso = registrosUltimoAno.length > 0 ? registrosUltimoAno : [...registros].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+            const fechasPeso = datosPeso.map(r => formatFecha(r.fecha));
+            const pesos = datosPeso.map(r => r.peso ? parseFloat(r.peso) : null);
+            
+            if (pesoChart) pesoChart.destroy();
+            pesoChart = new Chart(document.getElementById('pesoChart'), {
+                type: 'line',
+                data: {
+                    labels: fechasPeso,
+                    datasets: [{
+                        label: 'Peso (kg)',
+                        data: pesos,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y ? context.parsed.y + ' kg' : 'Sin datos';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de pasos con línea de 10,000
+            const pasos = sorted.map(r => r.pasos ? parseInt(r.pasos) : null);
+            if (pasosChart) pasosChart.destroy();
+            pasosChart = new Chart(document.getElementById('pasosChart'), {
+                type: 'bar',
+                data: {
+                    labels: fechas,
+                    datasets: [
+                        {
+                            label: 'Pasos',
+                            data: pasos,
+                            backgroundColor: pasos.map(p => p >= 10000 ? '#10b981' : '#f59e0b'),
+                            borderColor: pasos.map(p => p >= 10000 ? '#059669' : '#d97706'),
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Objetivo (10,000 pasos)',
+                            data: new Array(pasos.length).fill(10000),
+                            type: 'line',
+                            borderColor: '#ef4444',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        const valor = context.parsed.y;
+                                        const cumple = valor >= 10000 ? '✅' : '❌';
+                                        return valor ? `${cumple} ${valor.toLocaleString()} pasos` : 'Sin datos';
+                                    }
+                                    return 'Objetivo: 10,000 pasos';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de ayuno con líneas de referencia
+            const ayunos = sorted.map(r => r.ayuno ? parseFloat(r.ayuno) : null);
+            if (ayunoChart) ayunoChart.destroy();
+            ayunoChart = new Chart(document.getElementById('ayunoChart'), {
+                type: 'line',
+                data: {
+                    labels: fechas,
+                    datasets: [
+                        {
+                            label: 'Horas de Ayuno',
+                            data: ayunos,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            spanGaps: true,
+                            pointBackgroundColor: ayunos.map(a => {
+                                if (!a) return '#f59e0b';
+                                return a >= 12 ? '#10b981' : a >= 10 ? '#f59e0b' : '#ef4444';
+                            }),
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'Objetivo mínimo (12h)',
+                            data: new Array(ayunos.length).fill(12),
+                            type: 'line',
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        },
+                        {
+                            label: 'Mínimo aceptable (10h)',
+                            data: new Array(ayunos.length).fill(10),
+                            type: 'line',
+                            borderColor: '#ef4444',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        const valor = context.parsed.y;
+                                        if (!valor) return 'Sin datos';
+                                        
+                                        let estado = '';
+                                        if (valor >= 12) estado = '✅ Excelente';
+                                        else if (valor >= 10) estado = '⚠️ Aceptable';
+                                        else estado = '❌ Insuficiente';
+                                        
+                                        return `${estado}: ${valor}h`;
+                                    }
+                                    return context.dataset.label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            suggestedMin: 8,
+                            suggestedMax: 16
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de días sin cumplir dieta
+            const fallosData = sorted.map(r => {
+                const textoCompleto = [
+                    r.desayuno?.descripcion || '',
+                    r.almuerzo?.descripcion || '',
+                    r.comida?.descripcion || '',
+                    r.merienda?.descripcion || '',
+                    r.cena?.descripcion || ''
+                ].join(' ').toLowerCase();
+                
+                const matches = textoCompleto.match(/me (he )?pas[eéa]/g);
+                return matches ? matches.length : 0;
+            });
+
+            if (dietaChart) dietaChart.destroy();
+            dietaChart = new Chart(document.getElementById('dietaChart'), {
+                type: 'bar',
+                data: {
+                    labels: fechas,
+                    datasets: [{
+                        label: 'Comidas sin cumplir',
+                        data: fallosData,
+                        backgroundColor: fallosData.map(f => f === 0 ? '#10b981' : f <= 2 ? '#f59e0b' : '#ef4444'),
+                        borderColor: fallosData.map(f => f === 0 ? '#059669' : f <= 2 ? '#d97706' : '#dc2626'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const valor = context.parsed.y;
+                                    if (valor === 0) return '✅ Dieta cumplida';
+                                    return `🚫 ${valor} comida${valor > 1 ? 's' : ''} sin cumplir`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            title: {
+                                display: true,
+                                text: 'Nº de comidas'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Utilidades
+        function formatFecha(fecha) {
+            const d = new Date(fecha + 'T00:00:00');
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        }
+
+        // LocalStorage
+        function guardarDatos() {
+            localStorage.setItem('dietaRegistros', JSON.stringify(registros));
+        }
+
+        function cargarDatos() {
+            const datos = localStorage.getItem('dietaRegistros');
+            if (datos) {
+                registros = JSON.parse(datos);
+            }
+        }
+
+        // Exportar/Importar
+        function exportarDatos() {
+            const dataStr = JSON.stringify(registros, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `dieta_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            mostrarAlerta('✅ Datos exportados correctamente', 'success');
+        }
+
+        function importarDatos(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const datos = JSON.parse(e.target.result);
+                    if (confirm(`¿Importar ${datos.length} registros? Esto reemplazará los datos actuales.`)) {
+                        registros = datos;
+                        guardarDatos();
+                        actualizarVistas();
+                        mostrarHistorial();
+                        inicializarSelectorMeses();
+                        mostrarAlerta('✅ Datos importados correctamente', 'success');
+                    }
+                } catch (error) {
+                    mostrarAlerta('❌ Error al importar: archivo no válido', 'danger');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // NUEVO v4.2: Funciones de Vista Semanal
+        function getInicioSemana(fecha) {
+            const d = new Date(fecha);
+            const dia = d.getDay();
+            const diff = dia === 0 ? -6 : 1 - dia; // Ajustar para que lunes sea inicio
+            d.setDate(d.getDate() + diff);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+
+        function getFinSemana(inicioSemana) {
+            const fin = new Date(inicioSemana);
+            fin.setDate(fin.getDate() + 6);
+            fin.setHours(23, 59, 59, 999);
+            return fin;
+        }
+
+        function getRegistrosSemana() {
+            const hoy = new Date();
+            const inicioSemana = getInicioSemana(hoy);
+            inicioSemana.setDate(inicioSemana.getDate() + (semanaActual * 7));
+            const finSemana = getFinSemana(inicioSemana);
+
+            return registros.filter(r => {
+                const fecha = new Date(r.fecha + 'T00:00:00');
+                return fecha >= inicioSemana && fecha <= finSemana;
+            }).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        }
+
+        function calcularMetrica(registro, metrica) {
+            const pasos = registro.pasos ? parseInt(registro.pasos) : 0;
+            
+            switch(metrica) {
+                case 'pasos':
+                    return pasos;
+                case 'distancia':
+                    return parseFloat((pasos * 0.00075).toFixed(2)); // km
+                case 'calorias':
+                    // Fórmula estándar: ~0.04 kcal por paso
+                    return parseFloat((pasos * 0.04).toFixed(1));
+                case 'tiempo':
+                    // Promedio: 110 pasos por minuto caminando
+                    return parseFloat((pasos / 110).toFixed(0)); // minutos
+                default:
+                    return 0;
+            }
+        }
+
+        function formatearValor(valor, metrica) {
+            switch(metrica) {
+                case 'pasos':
+                    return valor.toLocaleString() + ' pasos';
+                case 'distancia':
+                    return valor.toFixed(2) + ' Km';
+                case 'calorias':
+                    return valor.toFixed(1) + ' Kcal';
+                case 'tiempo':
+                    const horas = Math.floor(valor / 60);
+                    const minutos = Math.round(valor % 60);
+                    return `${horas}h ${minutos}m`;
+                default:
+                    return valor.toString();
+            }
+        }
+
+        function formatearValorSimple(valor, metrica) {
+            switch(metrica) {
+                case 'pasos':
+                    return valor.toLocaleString();
+                case 'distancia':
+                    return valor.toFixed(2);
+                case 'calorias':
+                    return valor.toFixed(1);
+                case 'tiempo':
+                    const horas = Math.floor(valor / 60);
+                    const minutos = Math.round(valor % 60);
+                    return `${horas}h ${minutos}m`;
+                default:
+                    return valor.toString();
+            }
+        }
+
+        function cambiarSemana(direccion) {
+            semanaActual += direccion;
+            actualizarVistaSemanal();
+        }
+
+        function cambiarMetrica(metrica) {
+            metricaActual = metrica;
+            
+            // Actualizar botones activos
+            document.querySelectorAll('.metric-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            actualizarVistaSemanal();
+        }
+
+        function actualizarVistaSemanal() {
+            const registrosSemana = getRegistrosSemana();
+            
+            // Actualizar rango de fechas
+            const hoy = new Date();
+            const inicioSemana = getInicioSemana(hoy);
+            inicioSemana.setDate(inicioSemana.getDate() + (semanaActual * 7));
+            const finSemana = getFinSemana(inicioSemana);
+            
+            const formatoFecha = { day: 'numeric', month: 'short' };
+            const rangoTexto = `${inicioSemana.toLocaleDateString('es-ES', formatoFecha)} - ${finSemana.toLocaleDateString('es-ES', formatoFecha)}`;
+            document.getElementById('weekRange').textContent = rangoTexto;
+            
+            // NUEVO: Actualizar badge de semana
+            const badge = document.getElementById('weekBadge');
+            if (semanaActual === 0) {
+                badge.textContent = 'Semana actual';
+                badge.className = 'week-badge';
+            } else {
+                badge.textContent = rangoTexto;
+                badge.className = 'week-badge past';
+            }
+            
+            // Habilitar/deshabilitar botones de navegación
+            const proximaSemana = new Date();
+            proximaSemana.setDate(proximaSemana.getDate() + 7);
+            document.getElementById('nextWeekBtn').disabled = (semanaActual >= 0);
+            
+            // Calcular totales para TODAS las métricas
+            let totalPasos = 0, totalCalorias = 0, totalTiempo = 0, totalDistancia = 0;
+            const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            const datosPorDia = new Array(7).fill(0);
+            
+            registrosSemana.forEach(registro => {
+                const fecha = new Date(registro.fecha + 'T00:00:00');
+                const diaSemana = fecha.getDay();
+                const indice = diaSemana === 0 ? 6 : diaSemana - 1; // Ajustar para lunes = 0
+                
+                // Calcular para métrica actual (para el gráfico)
+                const valor = calcularMetrica(registro, metricaActual);
+                datosPorDia[indice] = valor;
+                
+                // Calcular todas las métricas para el resumen
+                totalPasos += calcularMetrica(registro, 'pasos');
+                totalCalorias += calcularMetrica(registro, 'calorias');
+                totalTiempo += calcularMetrica(registro, 'tiempo');
+                totalDistancia += calcularMetrica(registro, 'distancia');
+            });
+            
+            const numDias = registrosSemana.length > 0 ? registrosSemana.length : 1;
+            const promedioPasos = totalPasos / numDias;
+            const promedioCalorias = totalCalorias / numDias;
+            const promedioTiempo = totalTiempo / numDias;
+            const promedioDistancia = totalDistancia / numDias;
+            
+            // Actualizar valor principal (métrica actual)
+            const totalActual = metricaActual === 'pasos' ? totalPasos :
+                               metricaActual === 'calorias' ? totalCalorias :
+                               metricaActual === 'tiempo' ? totalTiempo : totalDistancia;
+            const promedioActual = totalActual / numDias;
+            
+            document.getElementById('weeklyTotalValue').textContent = formatearValorSimple(totalActual, metricaActual);
+            document.getElementById('weeklyAverage').textContent = `Media diaria: ${formatearValorSimple(promedioActual, metricaActual)}`;
+            
+            // Actualizar resumen de todas las métricas
+            document.getElementById('summaryPasos').textContent = totalPasos.toLocaleString();
+            document.getElementById('summaryPasosMedia').textContent = `Media: ${Math.round(promedioPasos).toLocaleString()}`;
+            
+            document.getElementById('summaryCalorias').textContent = totalCalorias.toFixed(0);
+            document.getElementById('summaryCaloriasMedia').textContent = `Media: ${promedioCalorias.toFixed(0)}`;
+            
+            const horas = Math.floor(totalTiempo / 60);
+            const minutos = Math.round(totalTiempo % 60);
+            document.getElementById('summaryTiempo').textContent = `${horas}h ${minutos}m`;
+            const horasPromedio = Math.floor(promedioTiempo / 60);
+            const minutosPromedio = Math.round(promedioTiempo % 60);
+            document.getElementById('summaryTiempoMedia').textContent = `Media: ${horasPromedio}h ${minutosPromedio}m`;
+            
+            document.getElementById('summaryDistancia').textContent = totalDistancia.toFixed(2) + ' km';
+            document.getElementById('summaryDistanciaMedia').textContent = `Media: ${promedioDistancia.toFixed(2)} km`;
+            
+            // Calcular y mostrar logros semanales
+            calcularLogrosSemanales();
+            
+            // Calcular y mostrar récords mensuales
+            calcularRecordsMensuales();
+            
+            // Crear gráfico
+            crearGraficoSemanal(diasSemana, datosPorDia);
+        }
+
+        // NUEVO v4.2: Calcular logros semanales históricos
+        function calcularLogrosSemanales() {
+            if (registros.length === 0) return;
+            
+            // Agrupar registros por semana
+            const semanas = {};
+            
+            registros.forEach(registro => {
+                const fecha = new Date(registro.fecha + 'T00:00:00');
+                const inicioSemana = getInicioSemana(fecha);
+                const claveSemana = inicioSemana.toISOString().split('T')[0];
+                
+                if (!semanas[claveSemana]) {
+                    semanas[claveSemana] = {
+                        fecha: inicioSemana,
+                        registros: []
+                    };
+                }
+                semanas[claveSemana].registros.push(registro);
+            });
+            
+            // Calcular totales por semana
+            let maxPasos = 0, maxCalorias = 0, maxTiempo = 0, maxDistancia = 0;
+            let fechaPasos = null, fechaCalorias = null, fechaTiempo = null, fechaDistancia = null;
+            
+            Object.keys(semanas).forEach(claveSemana => {
+                const semana = semanas[claveSemana];
+                let totalPasos = 0, totalCalorias = 0, totalTiempo = 0, totalDistancia = 0;
+                
+                semana.registros.forEach(registro => {
+                    totalPasos += calcularMetrica(registro, 'pasos');
+                    totalCalorias += calcularMetrica(registro, 'calorias');
+                    totalTiempo += calcularMetrica(registro, 'tiempo');
+                    totalDistancia += calcularMetrica(registro, 'distancia');
+                });
+                
+                if (totalPasos > maxPasos) {
+                    maxPasos = totalPasos;
+                    fechaPasos = semana.fecha;
+                }
+                if (totalCalorias > maxCalorias) {
+                    maxCalorias = totalCalorias;
+                    fechaCalorias = semana.fecha;
+                }
+                if (totalTiempo > maxTiempo) {
+                    maxTiempo = totalTiempo;
+                    fechaTiempo = semana.fecha;
+                }
+                if (totalDistancia > maxDistancia) {
+                    maxDistancia = totalDistancia;
+                    fechaDistancia = semana.fecha;
+                }
+            });
+            
+            // Actualizar UI de logros
+            document.getElementById('achievementPasos').textContent = maxPasos.toLocaleString();
+            document.getElementById('achievementPasosFecha').textContent = fechaPasos ? formatearRangoSemana(fechaPasos) : '-';
+            
+            document.getElementById('achievementCalorias').textContent = maxCalorias.toFixed(0);
+            document.getElementById('achievementCaloriasFecha').textContent = fechaCalorias ? formatearRangoSemana(fechaCalorias) : '-';
+            
+            const horas = Math.floor(maxTiempo / 60);
+            const minutos = Math.round(maxTiempo % 60);
+            document.getElementById('achievementTiempo').textContent = `${horas}h ${minutos}m`;
+            document.getElementById('achievementTiempoFecha').textContent = fechaTiempo ? formatearRangoSemana(fechaTiempo) : '-';
+            
+            document.getElementById('achievementDistancia').textContent = maxDistancia.toFixed(2) + ' km';
+            document.getElementById('achievementDistanciaFecha').textContent = fechaDistancia ? formatearRangoSemana(fechaDistancia) : '-';
+        }
+
+        function formatearRangoSemana(inicioSemana) {
+            const fin = getFinSemana(inicioSemana);
+            const formatoFecha = { day: 'numeric', month: 'short' };
+            return `${inicioSemana.toLocaleDateString('es-ES', formatoFecha)} - ${fin.toLocaleDateString('es-ES', formatoFecha)}`;
+        }
+
+        // NUEVO v4.2: Calcular récords mensuales
+        function calcularRecordsMensuales() {
+            if (registros.length === 0) return;
+            
+            // Agrupar registros por mes
+            const meses = {};
+            
+            registros.forEach(registro => {
+                const fecha = new Date(registro.fecha + 'T00:00:00');
+                const claveMes = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (!meses[claveMes]) {
+                    meses[claveMes] = {
+                        año: fecha.getFullYear(),
+                        mes: fecha.getMonth(),
+                        registros: []
+                    };
+                }
+                meses[claveMes].registros.push(registro);
+            });
+            
+            // Calcular totales por mes
+            let maxPasos = 0, maxCalorias = 0, maxTiempo = 0, maxDistancia = 0;
+            let mesPasos = null, mesCalorias = null, mesTiempo = null, mesDistancia = null;
+            
+            Object.keys(meses).forEach(claveMes => {
+                const mes = meses[claveMes];
+                let totalPasos = 0, totalCalorias = 0, totalTiempo = 0, totalDistancia = 0;
+                
+                mes.registros.forEach(registro => {
+                    totalPasos += calcularMetrica(registro, 'pasos');
+                    totalCalorias += calcularMetrica(registro, 'calorias');
+                    totalTiempo += calcularMetrica(registro, 'tiempo');
+                    totalDistancia += calcularMetrica(registro, 'distancia');
+                });
+                
+                if (totalPasos > maxPasos) {
+                    maxPasos = totalPasos;
+                    mesPasos = mes;
+                }
+                if (totalCalorias > maxCalorias) {
+                    maxCalorias = totalCalorias;
+                    mesCalorias = mes;
+                }
+                if (totalTiempo > maxTiempo) {
+                    maxTiempo = totalTiempo;
+                    mesTiempo = mes;
+                }
+                if (totalDistancia > maxDistancia) {
+                    maxDistancia = totalDistancia;
+                    mesDistancia = mes;
+                }
+            });
+            
+            // Función helper para formatear nombre del mes
+            const formatearMes = (mesData) => {
+                if (!mesData) return '-';
+                const fecha = new Date(mesData.año, mesData.mes);
+                return fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            };
+            
+            // Actualizar UI de récords mensuales
+            document.getElementById('monthAchievementPasos').textContent = maxPasos.toLocaleString();
+            document.getElementById('monthAchievementPasosFecha').textContent = formatearMes(mesPasos);
+            
+            document.getElementById('monthAchievementCalorias').textContent = maxCalorias.toFixed(0);
+            document.getElementById('monthAchievementCaloriasFecha').textContent = formatearMes(mesCalorias);
+            
+            const horas = Math.floor(maxTiempo / 60);
+            const minutos = Math.round(maxTiempo % 60);
+            document.getElementById('monthAchievementTiempo').textContent = `${horas}h ${minutos}m`;
+            document.getElementById('monthAchievementTiempoFecha').textContent = formatearMes(mesTiempo);
+            
+            document.getElementById('monthAchievementDistancia').textContent = maxDistancia.toFixed(2) + ' km';
+            document.getElementById('monthAchievementDistanciaFecha').textContent = formatearMes(mesDistancia);
+        }
+
+        function crearGraficoSemanal(labels, datos) {
+            if (weeklyChart) weeklyChart.destroy();
+            
+            const ctx = document.getElementById('weeklyChart');
+            
+            // Colores según métrica
+            let color, colorFondo, backgroundColor;
+            
+            if (metricaActual === 'pasos') {
+                // Para pasos: verde si >= 10000, rojo si < 10000
+                backgroundColor = datos.map(valor => valor >= 10000 ? '#10b981' : '#ef4444');
+                color = '#10b981'; // Color por defecto para borde
+            } else {
+                switch(metricaActual) {
+                    case 'calorias':
+                        color = '#f59e0b'; // Naranja
+                        backgroundColor = color;
+                        break;
+                    case 'tiempo':
+                        color = '#8b5cf6'; // Morado
+                        backgroundColor = color;
+                        break;
+                    case 'distancia':
+                        color = '#06b6d4'; // Cyan
+                        backgroundColor = color;
+                        break;
+                }
+            }
+            
+            // Preparar datasets
+            const datasets = [{
+                label: metricaActual.charAt(0).toUpperCase() + metricaActual.slice(1),
+                data: datos,
+                backgroundColor: backgroundColor,
+                borderColor: metricaActual === 'pasos' ? datos.map(valor => valor >= 10000 ? '#059669' : '#dc2626') : color,
+                borderWidth: 2,
+                borderRadius: 8
+            }];
+            
+            // NUEVO: Añadir línea de objetivo de 10,000 pasos
+            if (metricaActual === 'pasos') {
+                datasets.push({
+                    label: 'Objetivo (10,000 pasos)',
+                    data: new Array(7).fill(10000),
+                    type: 'line',
+                    borderColor: '#ef4444',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    tension: 0
+                });
+            }
+            
+            weeklyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: metricaActual === 'pasos',
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        return formatearValor(context.parsed.y, metricaActual);
+                                    }
+                                    return context.dataset.label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                maxTicksLimit: 6,
+                                callback: function(value) {
+                                    if (metricaActual === 'tiempo') {
+                                        const horas = Math.floor(value / 60);
+                                        const minutos = Math.round(value % 60);
+                                        // Solo mostrar valores en incrementos de 30 minutos
+                                        if (minutos === 0 || minutos === 30) {
+                                            if (minutos === 0) {
+                                                return horas + 'h';
+                                            } else {
+                                                return horas + 'h 30m';
+                                            }
+                                        }
+                                        return null; // No mostrar otros valores
+                                    } else if (metricaActual === 'distancia') {
+                                        return value.toFixed(1) + ' km';
+                                    } else if (metricaActual === 'calorias') {
+                                        return value.toFixed(0);
+                                    }
+                                    return value.toLocaleString();
+                                },
+                                stepSize: metricaActual === 'tiempo' ? 30 : undefined
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function borrarTodosDatos() {
+            if (!confirm('⚠️ ¿Estás seguro? Se borrarán TODOS los registros. Esta acción no se puede deshacer.')) return;
+            if (!confirm('Confirmación final: ¿Realmente quieres borrar todos los datos?')) return;
+            
+            registros = [];
+            guardarDatos();
+            actualizarVistas();
+            mostrarHistorial();
+            inicializarSelectorMeses();
+            mostrarAlerta('🗑️ Todos los datos han sido eliminados', 'success');
+        }
+    </script>
+    <!-- PWA: Botón de instalación -->
+    <button id="installButton" style="display: none; position: fixed; bottom: 80px; right: 20px; z-index: 10000; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 15px 25px; border-radius: 50px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); cursor: pointer; display: flex; align-items: center; gap: 10px; animation: pulse 2s infinite;">
+        📱 Instalar App
+    </button>
+
+    <style>
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        #installButton:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+        }
+    </style>
+
+    <!-- PWA: Service Worker y lógica de instalación -->
+    <script>
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registrado correctamente:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('❌ Error al registrar Service Worker:', error);
+                    });
+            });
+        }
+
+        // PWA: Lógica de instalación
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevenir que Chrome 67 y anteriores muestren el prompt automáticamente
+            e.preventDefault();
+            // Guardar el evento para poder dispararlo después
+            deferredPrompt = e;
+            // Mostrar el botón de instalación
+            installButton.style.display = 'flex';
+            
+            console.log('💡 App instalable detectada');
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                return;
+            }
+            
+            // Mostrar el prompt de instalación
+            deferredPrompt.prompt();
+            
+            // Esperar a que el usuario responda
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`Usuario eligió: ${outcome}`);
+            
+            if (outcome === 'accepted') {
+                console.log('✅ Usuario aceptó la instalación');
+                mostrarAlerta('🎉 App instalada correctamente. ¡Búscala en tu pantalla de inicio!', 'success');
+            } else {
+                console.log('❌ Usuario rechazó la instalación');
+            }
+            
+            // Limpiar el prompt guardado
+            deferredPrompt = null;
+            installButton.style.display = 'none';
+        });
+
+        // Detectar cuando la app es instalada
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA instalada exitosamente');
+            installButton.style.display = 'none';
+            deferredPrompt = null;
+            
+            // Opcional: Enviar analytics o mostrar mensaje
+            if (typeof mostrarAlerta === 'function') {
+                mostrarAlerta('🎉 ¡App instalada! Ya puedes usarla desde tu pantalla de inicio', 'success');
+            }
+        });
+
+        // Detectar si ya está instalada
+        window.addEventListener('load', () => {
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+                console.log('✅ App ejecutándose en modo standalone');
+                installButton.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
